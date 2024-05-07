@@ -89,7 +89,6 @@ def main():
         list_of_sensors
     )
 
-    data=get_data(sensor_name)
 
     f"""
     # Tracker `{sensor_name}`
@@ -102,6 +101,11 @@ def main():
     """
 
     main_color = "#FF4B4B"
+
+    #reload button before data to refresh the data
+    st.button('Update Data')
+    data=get_data(sensor_name)
+
 
     # Strip the first 4 characters from the name of the keys of data. Then sort it by the key from largest to smallest
     sorted_data = {k[4:]: v for k, v in sorted(data.items(), key=lambda item: item[0], reverse=True)}
