@@ -93,7 +93,7 @@ def main():
     f"""
     # Tracker `{sensor_name}`
 
-    Location `41.37768208035169, 2.0860261852263178`
+    Location `{np.random.uniform(0, 90)}, {np.random.uniform(0, 180)}`
     """
 
     """
