@@ -1,10 +1,11 @@
-import altair as alt
 import numpy as np
 import pandas as pd
 import streamlit as st
 import datetime
 from google.cloud import firestore
 from google.oauth2 import service_account
+import plotly.express as px
+import plotly.graph_objects as go
 import json
 
 key_dict = json.loads(st.secrets["textkey"])
@@ -12,6 +13,9 @@ key_dict = json.loads(st.secrets["textkey"])
 # key_dict = json.load(open("firestore-key.json"))
 creds = service_account.Credentials.from_service_account_info(key_dict)
 db = firestore.Client(credentials=creds)
+
+temperature_color="#4169E1"
+humidity_color="#FF4B4B"
 
 def get_data(sensor_name):
     """
@@ -27,52 +31,26 @@ def get_data(sensor_name):
     doc = doc_ref.get()
 
     return doc.to_dict()
+def create_chart_data(sorted_data):
+    new_chart_data = [{'date': datetime.datetime.fromtimestamp(int(ts)), 
+         'temperature': values[0], 
+         'humidity': values[1]} for ts, values in sorted_data.items()]
+    return pd.DataFrame(new_chart_data)
 
-def get_chart(data):
-    """
-    Generates an interactive line chart based on the given data.
+def create_line_chart(chart_data):
+    chart_data = chart_data.melt(id_vars='date', var_name='type', value_name='value')
+    color_dict = {'temperature': temperature_color, 'humidity': humidity_color}
+    fig = px.line(chart_data, x="date", y="value", color='type', title='Temperature and Humidity over Time', color_discrete_map=color_dict)
+    return fig
 
-    Args:
-        data (pd.DataFrame): The data to be plotted.
-
-    Returns:
-        alt.Chart: An Altair chart object.
-    """
-    hover = alt.selection_point(
-        fields=["date"],
-        nearest=True,
-        on="mouseover",
-        empty=False,
+def create_histogram(df, column, title, color):
+    fig = px.histogram(df, x=column, histnorm='probability density', color_discrete_sequence=[color], marginal="violin")
+    fig.update_layout(
+        title=title,
+        xaxis_title=column,
+        yaxis_title="Frequency",
     )
-
-    lines = (
-        alt.Chart(data)
-        .mark_line()
-        .encode(
-            x="date",
-            y="value",
-            color="type",
-        )
-    )
-    # Draw points on the line, and highlight based on selection
-    points = lines.transform_filter(hover).mark_circle(size=65)
-
-    # Draw a rule at the location of the selection
-    tooltips = (
-        alt.Chart(data)
-        .mark_rule()
-        .encode(
-            x="date:T",
-            y="value",
-            opacity=alt.condition(hover, alt.value(0.3), alt.value(0)),
-            tooltip=[
-                alt.Tooltip("date", title="Date"),
-                alt.Tooltip("value", title="Value"),
-            ],
-        )
-        .add_params(hover)
-    )
-    return (lines + points + tooltips).interactive()
+    return fig
 
 def main():
     """
@@ -92,23 +70,20 @@ def main():
 
     f"""
     # Tracker `{sensor_name}`
-
-    Location `{np.random.uniform(0, 90)}, {np.random.uniform(0, 180)}`
+    Fetched At: `{datetime.datetime.now()}`
     """
 
     """
     ## Current Conditions
     """
 
-    main_color = "#FF4B4B"
-
     #reload button before data to refresh the data
     st.button('Update Data')
-    data=get_data(sensor_name)
+    raw_data=get_data(sensor_name)
 
 
     # Strip the first 4 characters from the name of the keys of data. Then sort it by the key from largest to smallest
-    sorted_data = {k[4:]: v for k, v in sorted(data.items(), key=lambda item: item[0], reverse=True)}
+    sorted_data = {k[4:]: v for k, v in sorted(raw_data.items(), key=lambda item: item[0], reverse=True)}
     values_list = list(sorted_data.values())
 
     # Get the first and second last values
@@ -125,25 +100,18 @@ def main():
     col2.metric("Humidity", f"{current_humidity}%", f"{humidity_difference}%")
 
     """
-    ## Sensor History
+    ## Historial Conditions
+    #### Line Chart
     """
 
-    # Prepare data for chart
-    # Create a single DataFrame for both temperature and humidity
-    data = [{'date': datetime.datetime.fromtimestamp(int(ts)).strftime('%Y-%m-%d %H:%M:%S'), 
-             'temperature': values[0], 
-             'humidity': values[1]} for ts, values in sorted_data.items()]
-
-    chart_data = pd.DataFrame(data)
-
-    # Melt the DataFrame to have a 'type' column
-    chart_data = chart_data.melt(id_vars='date', var_name='type', value_name='value')
-
-    chart = get_chart(chart_data)
-    st.altair_chart(
-        (chart).interactive(),
-        use_container_width=True
-    )
+    chart_data = create_chart_data(sorted_data)
+    fig = create_line_chart(chart_data)
+    st.plotly_chart(fig)
+    fig = create_histogram(chart_data, "temperature", "Distribution of Temperatures", temperature_color)
+    st.plotly_chart(fig)
+    fig = create_histogram(chart_data, "humidity", "Distribution of Humidity", humidity_color)
+    st.plotly_chart(fig)
+    st.dataframe(chart_data, use_container_width=True)
 
 if __name__ == "__main__":
     main()
