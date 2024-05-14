@@ -107,10 +107,17 @@ def main():
     chart_data = create_chart_data(sorted_data)
     fig = create_line_chart(chart_data)
     st.plotly_chart(fig)
+    """
+    #### Histograms
+    """
     fig = create_histogram(chart_data, "temperature", "Distribution of Temperatures", temperature_color)
     st.plotly_chart(fig)
     fig = create_histogram(chart_data, "humidity", "Distribution of Humidity", humidity_color)
     st.plotly_chart(fig)
+
+    """
+    ## Raw Data
+    """
     st.dataframe(chart_data, use_container_width=True)
 
 if __name__ == "__main__":
