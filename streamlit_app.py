@@ -8,9 +8,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 
-# key_dict = json.loads(st.secrets["textkey"])
+key_dict = json.loads(st.secrets["textkey"])
 #use firestore-key.json file to get the key
-key_dict = json.load(open("firestore-key.json"))
+# key_dict = json.load(open("firestore-key.json"))
 creds = service_account.Credentials.from_service_account_info(key_dict)
 db = firestore.Client(credentials=creds)
 
