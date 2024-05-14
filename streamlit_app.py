@@ -8,9 +8,9 @@ import plotly.express as px
 import plotly.graph_objects as go
 import json
 
-key_dict = json.loads(st.secrets["textkey"])
+# key_dict = json.loads(st.secrets["textkey"])
 #use firestore-key.json file to get the key
-# key_dict = json.load(open("firestore-key.json"))
+key_dict = json.load(open("firestore-key.json"))
 creds = service_account.Credentials.from_service_account_info(key_dict)
 db = firestore.Client(credentials=creds)
 
@@ -30,7 +30,20 @@ def get_data(sensor_name):
     # Then get the data at that reference.
     doc = doc_ref.get()
 
+    # if the doc has a collection named 'EasterEgg' then get a list of all the subdocuments of the collection "Days"
+    number_of_days = 1
+
+    if "EasterEgg" in doc.to_dict().keys():
+        list_of_days = [doc.id for doc in db.collection("Test1").document(sensor_name).collection("Days").stream()]
+        #get the last document in the collection
+        doc_ref = db.collection("Test1").document(sensor_name).collection("Days").document(list_of_days[-1])
+        # number_of_days = len(list_of_days)
+
+    doc = doc_ref.get()
+
+    print(doc.to_dict())
     return doc.to_dict()
+
 def create_chart_data(sorted_data):
     new_chart_data = [{'date': datetime.datetime.fromtimestamp(int(ts)), 
          'temperature': values[0], 
@@ -79,8 +92,7 @@ def main():
 
     #reload button before data to refresh the data
     st.button('Update Data')
-    raw_data=get_data(sensor_name)
-
+    raw_data =get_data(sensor_name)
 
     # Strip the first 4 characters from the name of the keys of data. Then sort it by the key from largest to smallest
     sorted_data = {k[4:]: v for k, v in sorted(raw_data.items(), key=lambda item: item[0], reverse=True)}
