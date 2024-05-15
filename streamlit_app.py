@@ -31,7 +31,7 @@ def aggregate_days_data(sensor_name):
     # Iterate through each document in the subcollection
     for doc in days_docs:
         # Convert document data to dictionary and extend the aggregated data list
-        aggregated_data.extend(doc.to_dict().values())
+        aggregated_data.extend(doc.to_dict())
     
     return aggregated_data
 
