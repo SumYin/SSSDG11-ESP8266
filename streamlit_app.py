@@ -53,7 +53,7 @@ def get_data(sensor_name):
 
     if "EasterEgg" in doc.to_dict().keys():
         doc = aggregate_days_data(sensor_name)
-
+        return doc
     # print(doc.to_dict())
     return doc.to_dict()
 
