@@ -17,24 +17,6 @@ db = firestore.Client(credentials=creds)
 temperature_color="#4169E1"
 humidity_color="#FF4B4B"
 
-# Function to aggregate data from all documents in the "Days" subcollection
-def aggregate_days_data(sensor_name):
-    # Reference to the "Days" subcollection
-    days_collection_ref = db.collection("Test1").document(sensor_name).collection("Days")
-    
-    # Stream all documents in the "Days" subcollection
-    days_docs = days_collection_ref.stream()
-    
-    # Initialize an empty list to store the aggregated data
-    aggregated_data = []
-    
-    # Iterate through each document in the subcollection
-    for doc in days_docs:
-        # Convert document data to dictionary and extend the aggregated data list
-        aggregated_data.extend(doc.to_dict())
-    
-    return aggregated_data
-
 def get_data(sensor_name):
     """
     Retrieves data from the Firestore database.
@@ -49,12 +31,21 @@ def get_data(sensor_name):
     doc = doc_ref.get()
 
     # if the doc has a collection named 'EasterEgg' then get a list of all the subdocuments of the collection "Days"
-    number_of_days = 1
 
     if "EasterEgg" in doc.to_dict().keys():
-        doc = aggregate_days_data(sensor_name)
-        return doc
-    # print(doc.to_dict())
+        doc_ref = db.collection("Test1").document(sensor_name).collection("Days")
+        #get all the stuff in all the documents inside doc_ref then put it in a dictionary
+        doc = doc_ref.stream()
+        data = {}
+        for doc in doc:
+            data.update(doc.to_dict())
+
+        print(".............................")
+        print(data)
+
+        return data
+
+    print(doc.to_dict())
     return doc.to_dict()
 
 def create_chart_data(sorted_data):
